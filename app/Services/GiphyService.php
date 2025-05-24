@@ -11,17 +11,21 @@ class GiphyService
 
     public function __construct()
     {
-        $this->client = new Client();
         $this->apiKey = env('GIPHY_API_KEY');
+
+        $this->client = new Client([
+            'base_uri' => env('GIPHY_BASE_URI'),
+            'timeout'  => env('GIPHY_TIMEOUT'),
+        ]);
     }
 
     public function getGif($title)
     {
-        $response = $this->client->get('https://api.giphy.com/v1/gifs/search', [
+        $response = $this->client->get('gifs/search', [
             'query' => [
                 'api_key' => $this->apiKey,
-                'q' => $title,
-                'limit' => 1,
+                'q'       => $title,
+                'limit'   => 1,
             ],
         ]);
 

@@ -7,6 +7,7 @@ use App\Services\TMDBService;
 use App\Services\YouTubeService;
 use App\Services\GiphyService;
 use App\Services\SpotifyService;
+use App\Models\Review;
 
 class MovieController extends Controller
 {
@@ -24,23 +25,39 @@ class MovieController extends Controller
         $this->spotify = $spotify;
     }
 
-    public function search(Request $request)
-    {
-        $title = $request->query('title');
+public function search(Request $request)
+{
+    $title = $request->query('title');
 
-        if (!$title) {
-            return response()->json(['error' => 'Title is required'], 400);
-        }
-
-        try {
-            return response()->json([
-                'movie'   => $this->tmdb->getMovieDetails($title),
-                'trailer' => $this->yt->getTrailer($title),
-                'giphy'   => $this->giphy->getGif($title),
-                'spotify' => $this->spotify->getPlaylist($title),
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Something went wrong', 'details' => $e->getMessage()], 500);
-        }
+    if (!$title) {
+        return response()->json(['error' => 'Title is required'], 400);
     }
+
+    try {
+        $movieData = $this->tmdb->getMovieDetails($title);
+
+        if (isset($movieData['error'])) {
+            return response()->json(['error' => 'Movie not found in TMDb'], 404);
+        }
+
+        
+        $reviews = Review::where('movie_title', $movieData['title'])
+            ->get(['id', 'user_id', 'rating', 'review', 'created_at']);
+
+        return response()->json([
+            'movie'   => $movieData,
+            'trailer' => $this->yt->getTrailer($title),
+            'giphy'   => $this->giphy->getGif($title),
+            'spotify' => $this->spotify->getPlaylist($title),
+            'ILoveMoviez users reviews' => $reviews,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error'   => 'Something went wrong',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
 }

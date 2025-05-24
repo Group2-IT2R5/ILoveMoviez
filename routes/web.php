@@ -18,15 +18,6 @@ $router->get('/', function () use ($router) {
 });
 
 
-$router->get('/test', function () {
-    return response()->json(['message' => 'Lumen is working']);
-});
-
-
-$router->get('/test', function () {
-    return response()->json(['message' => 'Lumen is working!']);
-});
-
 
 // routes/web.php or routes/api.php
 $router->post('/register', 'AuthController@register');
@@ -34,7 +25,11 @@ $router->post('/login', 'AuthController@login');
 
 $router->group(['middleware' => 'auth'], function () use ($router) {
     $router->get('/movie', 'MovieController@search');  // or whatever method you want to use
-});
+    $router->post('/review/{movieTitle}', 'ReviewController@store');
+    $router->get('/review', 'ReviewController@index');
+    $router->put('/review/{movieTitle}', 'ReviewController@update');
+    $router->delete('/review/{movieTitle}', 'ReviewController@destroy');
+}); 
 
 
 

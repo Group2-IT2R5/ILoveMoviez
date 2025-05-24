@@ -3,6 +3,7 @@
 return [
     'defaults' => [
         'guard' => 'api',
+
     ],
 
     'guards' => [

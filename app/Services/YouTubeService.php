@@ -11,13 +11,17 @@ class YouTubeService
 
     public function __construct()
     {
-        $this->client = new Client();
         $this->apiKey = env('YOUTUBE_API_KEY');
+
+        $this->client = new Client([
+            'base_uri' => env('YOUTUBE_BASE_URI'),
+            'timeout'  => env('YOUTUBE_TIMEOUT'),
+        ]);
     }
 
     public function getTrailer($title)
     {
-        $response = $this->client->get('https://www.googleapis.com/youtube/v3/search', [
+        $response = $this->client->get('search', [
             'query' => [
                 'key' => $this->apiKey,
                 'q' => $title . ' trailer',
@@ -32,7 +36,7 @@ class YouTubeService
 
         return [
             'title' => $video['snippet']['title'] ?? 'No trailer found',
-            'video_url' => $video['id']['videoId']
+            'video_url' => isset($video['id']['videoId'])
                 ? 'https://www.youtube.com/watch?v=' . $video['id']['videoId']
                 : null,
         ];

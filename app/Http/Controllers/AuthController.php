@@ -3,70 +3,49 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\Exceptions\JWTException;
+use App\Services\AuthService;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    protected $authService;
+
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
     public function register(Request $request)
     {
-        // Validate input
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6',
-        ]);
+        try {
+            $result = $this->authService->register($request->all());
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'message' => 'User registered successfully',
+                'user_id' => $result['user_id'],
+                'token'   => $result['token'],
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         }
-
-        // Create new user
-        $user = new User();
-        $user->name = $request->input('name');
-        $user->email = $request->input('email');
-        $user->password = Hash::make($request->input('password'));
-        $user->save();
-
-        // Generate JWT token for this user
-        $token = JWTAuth::fromUser($user);
-
-        // Save the token to user record (optional)
-        $user->api_token = $token;
-        $user->save();
-
-        return response()->json([
-            'message' => 'User registered successfully',
-            'user_id' => $user->id,
-            'token'   => $token,
-        ], 201);
     }
 
     public function login(Request $request)
     {
-        $credentials = $request->only(['email', 'password']);
+        $result = $this->authService->login(
+            $request->input('email'),
+            $request->input('password')
+        );
 
-        try {
-            if (!$token = JWTAuth::attempt($credentials)) {
-                return response()->json(['error' => 'Invalid credentials'], 401);
-            }
-        } catch (JWTException $e) {
-            return response()->json(['error' => 'Could not create token'], 500);
+        if (isset($result['error'])) {
+            $code = $result['error'] === 'User not found' ? 404 : 401;
+            return response()->json(['error' => $result['error']], $code);
         }
 
-        // Get the authenticated user
-        $user = auth()->user();
-
-        // Optionally save token to user record
-        $user->api_token = $token;
-        $user->save();
-
         return response()->json([
-            'user_id' => $user->id,
-            'token'   => $token,
+            'user_id' => $result['user_id'],
+            'token'   => $result['token'],
         ]);
     }
 }
