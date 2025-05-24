@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: lumen-api
+    env: php
+    plan: free
+    buildCommand: "composer install --no-dev --optimize-autoloader"
+    startCommand: "php -S 0.0.0.0:10000 -t public"
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_KEY
+        value: base64:your_generated_app_key
+      - key: TMDB_API_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: sqlite
